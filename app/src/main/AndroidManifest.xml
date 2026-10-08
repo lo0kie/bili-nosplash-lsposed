@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  模块**没有界面，也没有图标**：LSPosed 只按 `META-INF/xposed/` 下的元数据识别模块，
+  不需要 Activity / 图标资源。这里只留框架要读的模块名与说明。
+  没有 `queries`：那一段是给界面查「目标应用装了没」用的，界面没了就不需要放宽包可见性。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="false"
+        android:description="@string/module_description"
+        android:label="@string/app_name"
+        android:supportsRtl="true" />
+
+</manifest>

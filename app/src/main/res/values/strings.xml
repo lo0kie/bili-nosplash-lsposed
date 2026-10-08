@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">bilibili防瞎眼</string>
+    <string name="module_description">让 B 站启动屏跟随系统深色模式</string>
+</resources>
