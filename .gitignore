@@ -19,3 +19,6 @@ keystore.properties
 # 设备原始包（体积大，只本地留作 dex 核对，不入库）
 reference/*.apk
 reference/__pycache__/
+
+# 签名私钥的 base64（本地用，不入库）
+keystore.b64

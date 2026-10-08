@@ -1,15 +1,18 @@
 # bilibili防瞎眼
 
-LSPosed 模块：让 B 站的启动屏跟随系统深色模式，消掉冷启动那段白屏。
+LSPosed 模块：让 B 站的启动屏跟随系统深色模式。
 
 ## 下载
 
-[Releases](https://github.com/lo0kie/bili-nosplash-lsposed/releases) —— 装 `-release` 那个。
+[Releases](https://github.com/lo0kie/bili-nosplash-lsposed/releases)
 
 ## 使用
 
-1. 启用模块，作用域勾选 `tv.danmaku.bili` 与 `com.android.systemui`；
-2. 强停 bilibili 与系统界面（SystemUI），再打开 B 站。
+启用模块（作用域：`tv.danmaku.bili`、`com.android.systemui`）→ **重启SystemUI**。
+
+> ColorOS 会缓存启动快照，**启用模块后需要重启手机**, 否则会短暂出现全宽白条。
+
+> 启动页深色化的部分实现来自[哔哩漫游](https://github.com/yujincheng08/BiliRoaming)。
 
 ## 已验证
 

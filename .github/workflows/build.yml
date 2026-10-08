@@ -53,7 +53,11 @@ jobs:
             echo "::notice title=未配置签名密钥::release 包退回 debug 签名，只能本机测试、不可发布"
             exit 0
           fi
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > release.jks
+          # 严格解码：secret 里必须是干净的 base64（正确值：长度 3624，sha256 前 16 位 502980b25fe9173c）。
+          # 不对就该失败，不在这里做任何容错。密钥库本身是否可用，交给下面的 Gradle 去报。
+          echo "KEYSTORE_BASE64: 长度 ${#KEYSTORE_BASE64}，sha256 $(printf '%s' "$KEYSTORE_BASE64" | sha256sum | cut -c1-16)"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > release.jks
+          ls -l release.jks
           {
             echo "storeFile=release.jks"
             echo "storePassword=${KEYSTORE_PASSWORD}"

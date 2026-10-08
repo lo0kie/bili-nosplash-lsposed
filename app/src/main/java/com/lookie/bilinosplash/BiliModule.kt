@@ -115,6 +115,16 @@ class BiliModule : XposedModule() {
      */
     private fun installHooks(loader: ClassLoader, versionName: String, versionCode: Long) {
         XLog.i("准备安装 Hook：版本 $versionName/$versionCode，进程=${HostEnv.process()}")
+        // ColorOS 的启动画面不止一条路：除 WMShell 画的那份，ROM 在 system_server 里还有一套
+        // （oplus-services.jar: OplusStartingSurfaceController / OplusStartingSurfaceControllerBase /
+        //  QuickStartUtils / OplusCaptureFile / StartingSurfacePreviewPolicy）。它会按主题的
+        //  windowBackground 铺面、并把结果**缓存/拍成快照**（进程内按 uiMode 缓存 +
+        //  getCapBitmapFileForStartingSurface 落盘）。本模块作用域只有 B 站 + SystemUI，盖不到那个进程，
+        //  所以那一层只能靠「启动屏改深后重启一次，让缓存/快照重新生成」来生效。
+        XLog.i(
+            "ColorOS 启动画面：system_server 里还有一套（OplusStartingSurfaceController/QuickStartUtils），" +
+                "本模块盖不到；它会缓存/快照启动画面，改完启动屏需重启一次才会重新生成",
+        )
         SplashTheme.install(this, loader)
     }
 
@@ -125,7 +135,7 @@ class BiliModule : XposedModule() {
      * 不用反复来回猜。
      */
     private companion object {
-        const val BUILD_ID = "2026-10-09-0410"
+        const val BUILD_ID = "2026-10-09-0530"
 
         /** 目标应用包名（与 `META-INF/xposed/scope.list` 保持一致）。 */
         const val TARGET_PKG = "tv.danmaku.bili"

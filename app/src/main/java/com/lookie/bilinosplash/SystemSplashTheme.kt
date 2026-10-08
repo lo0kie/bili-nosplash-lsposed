@@ -107,6 +107,16 @@ internal object SystemSplashTheme {
 
     private const val METHOD_GET_DRAWABLE = "getDrawableForDensity"
 
+    /**
+     * 启动窗口属性对象（反汇编本机 SystemUI 得到，未混淆）。
+     *
+     * 它的 `getWindowBgImage(Context)` 会**缓存**取到的 drawable，是「白底最后又被写回去」的那一环。
+     */
+    private const val ATTRS_CLASS =
+        "com.android.wm.shell.startingsurface.SplashscreenContentDrawer\$SplashScreenWindowAttrs"
+
+    private const val METHOD_GET_WINDOW_BG = "getWindowBgImage"
+
     private const val FIELD_ACTIVITY_INFO = "mActivityInfo"
 
     private const val FIELD_CONTEXT = "mContext"
@@ -141,7 +151,52 @@ internal object SystemSplashTheme {
      */
     fun install(module: XposedModule, loader: ClassLoader) {
         installDrawableGuard(module)
+        // View 层收口：启动窗口最终也是某个 view 的 background，这里再兜一次（并留日志探针）。
+        SplashTheme.installViewBackgroundHook(module, "systemui")
+        installWindowBgImageHook(module, loader)
         installBuilderHooks(module, loader)
+    }
+
+    /**
+     * 再收一层：`SplashScreenWindowAttrs#getWindowBgImage(Context)`。
+     *
+     * 反汇编本机 SystemUI 的 `classes3.dex` 看到它的实现是：
+     *
+     * ```
+     * Resources res = ctx.getResources();
+     * int uiMode = res.getConfiguration().uiMode;
+     * if (mWindowBgImage != null && uiMode == this.uiMode) return mWindowBgImage;   // ← 缓存命中
+     * if (mWindowBgResId == 0) return mWindowBgImage;
+     * mWindowBgImage = ctx.getDrawable(mWindowBgResId);   // Context.getDrawable → getDrawableForDensity
+     * this.uiMode = uiMode;
+     * return mWindowBgImage;
+     * ```
+     *
+     * 关键是**它把结果缓存在 `mWindowBgImage` 里**：只要 `uiMode` 没变，之后每次启动窗口都直接
+     * 复用那份缓存 —— 哪怕那份是白的。所以在它返回处再兜一次，把「白底 layer-list」换成深色版，
+     * 缓存里存的就也是深色。
+     */
+    private fun installWindowBgImageHook(module: XposedModule, loader: ClassLoader) {
+        val cls = Reflect.findClass(loader, ATTRS_CLASS)
+        val method = if (cls == null) null else Reflect.method(cls, METHOD_GET_WINDOW_BG, Context::class.java)
+        if (method == null) {
+            XLog.w("没找到 $ATTRS_CLASS#$METHOD_GET_WINDOW_BG，启动窗口背景缓存那一层跳过")
+            return
+        }
+        module.hookGuarded(method) { chain ->
+            val result = chain.proceed()
+            val ctx = chain.getArg(0) as? Context
+            val dark = guarded {
+                SplashTheme.darkenWhiteSplash(
+                    result as? Drawable,
+                    ctx?.resources,
+                    "systemui/attrs",
+                    "getWindowBgImage 缓存",
+                )
+            }
+            if (dark == null) result else dark
+        }
+        XLog.i("启动窗口深色化已就绪：$ATTRS_CLASS#$METHOD_GET_WINDOW_BG 收口")
     }
 
     /**
